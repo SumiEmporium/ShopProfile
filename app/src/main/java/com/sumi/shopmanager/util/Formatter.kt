@@ -6,7 +6,7 @@ import java.util.*
 
 object Formatter {
 
-    fun getFormattedDeliveryDate(deliveryDate: String): String? {
+    fun getFormattedDeliveryDate(deliveryDate: String?): String? {
         try {
             var inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.ENGLISH)
             val d: Date = inputFormat.parse(deliveryDate)

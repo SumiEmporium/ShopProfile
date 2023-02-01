@@ -2,7 +2,9 @@ package com.sumi.shopmanager
 
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
@@ -20,11 +22,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: ShopViewModel
     private lateinit var adapter: ShopOrdersAdapter
     var orderList: MutableList<ShopOrdersResponseItem> = mutableListOf()
+    var isVisibleHistory = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
-
 
         viewModel = ViewModelProvider(this)[ShopViewModel::class.java]
         adapter = ShopOrdersAdapter()
@@ -34,12 +36,15 @@ class MainActivity : AppCompatActivity() {
         subscribeObserver()
 
         binding.cardConfirmed.setOnClickListener {
+            isVisibleHistory = false
             viewModel.getOrdersData(120, 29, 8, 12)
         }
         binding.cardPartialDelivered.setOnClickListener {
+            isVisibleHistory = true
             viewModel.getOrdersData(120, 29, 8, 15)
         }
         binding.cardDelivered.setOnClickListener {
+            isVisibleHistory = true
             viewModel.getOrdersData(120, 29, 8, 9)
         }
 
@@ -53,6 +58,7 @@ class MainActivity : AppCompatActivity() {
         viewModel.shopInfoResponse.observe(this) {
             when (it.status) {
                 Status.LOADING -> {
+                    binding.progressCircular.visibility = View.VISIBLE
                     Log.e("shopInfoResponse", "loading")
                 }
 
@@ -63,6 +69,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 Status.ERROR -> {
+                    binding.progressCircular.visibility = View.GONE
                     Log.e("shopInfoResponse", "ERROR${it.message}")
                 }
             }
@@ -77,22 +84,28 @@ class MainActivity : AppCompatActivity() {
                 Status.SUCCESS -> {
                     Log.e("ordersResponse", "SUCCESS")
                     orderList = it.data!!
-                   // adapter.submitList(orderList)
+                    val list = orderList.map { it.copy(isVisible = isVisibleHistory) }
+                    adapter.submitList(list)
                     binding.rvOrders.adapter = adapter
+
+                    if (binding.progressCircular.isVisible) {
+                        binding.progressCircular.visibility = View.GONE
+                    }
                 }
 
                 Status.ERROR -> {
+                    binding.progressCircular.visibility = View.GONE
                     Log.e("ordersResponse", "ERROR${it.message}")
-
                 }
             }
         }
     }
+
     private fun filter(text: String) {
 
         val filteredList: MutableList<ShopOrdersResponseItem> = mutableListOf()
         for (item in orderList) {
-            if (item.code.lowercase().contains(text.lowercase())) {
+            if (item.code?.lowercase()?.contains(text.lowercase()) == true) {
 
                 filteredList.add(item)
             }
